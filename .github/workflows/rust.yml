@@ -1,0 +1,82 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+    - uses: actions/checkout@v4
+    
+    - name: Auto Increment Semver Action
+        uses: MCKanpolat/auto-semver-action@v1
+        id: versioning
+        with:
+          releaseType: patch
+          incrementPerCommit: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Next Release Number
+        run: echo ${{ steps.versioning.outputs.version }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.versioning.outputs.version }}
+          release_name: Release ${{ steps.versioning.outputs.version }}
+          body: |
+            Automatically created release by GitHub Actions
+          draft: false
+          prerelease: false
+
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.versioning.outputs.version }}
+
+  build:
+    name: Build and Upload
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --release
+    - name: Run tests
+      run: cargo test --verbose
+    - name: List target directory
+      run: ls -al target/release
+    - name: Check for binary
+      run: |
+          if [ -f "target/release/LitePhoton" ]; then
+            echo "binary found."
+            echo "JAR_FILE_PATH=target/release/LitePhoton" >> $GITHUB_ENV
+            echo "JAR_FILE_NAME=LitePhoton" >> $GITHUB_ENV
+          else
+            echo "LitePhoton not found!"
+            exit 1
+          fi
+    - name: Upload XenonCord.jar
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ${{ env.JAR_FILE_PATH }}
+        asset_name: ${{ env.JAR_FILE_NAME }}
+        asset_content_type: application/java-archive
+
+permissions:
+  contents: write
+  packages: write
+    
