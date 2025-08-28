@@ -1,0 +1,14 @@
+[package]
+name = "TxtScanner"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.46", features = ["derive"] }
+log = "0.4.27"
+log4rs = "1.4.0-rc2"
+num_cpus = "1.17.0"
+twoway = "0.2.2"
+rayon = "1.10.0"
+
+[profile.release]
+#debug = true # uncomment this only when flamegraph needed / or profiling
