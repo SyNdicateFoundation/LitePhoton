@@ -15,7 +15,7 @@ fn main() {
     let args = ARGUMENTS.get_or_init(|| Args::parse());
     logger::setup_logger();
 
-    info!("Starting up scanner with this arguments: {:?}", args);
+    info!("Starting up LitePhoton with this arguments: {:?}", args);
     info!("Started scanning with {} method", args.method);
     println!();
 

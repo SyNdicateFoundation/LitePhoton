@@ -1,5 +1,5 @@
 [package]
-name = "TxtScanner"
+name = "LitePhoton"
 edition = "2024"
 
 [dependencies]

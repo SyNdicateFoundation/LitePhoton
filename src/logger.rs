@@ -6,7 +6,7 @@ use log4rs::Config;
 pub fn setup_logger(){
     log4rs::init_config(Config::builder()
         .appender(Appender::builder().build("stdout", Box::new(ConsoleAppender::builder()
-            .encoder(Box::new(PatternEncoder::new("[Scanner] {l} {m}\n")))
+            .encoder(Box::new(PatternEncoder::new("[LitePhoton] {l} {m}\n")))
             .build())))
         .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
         .unwrap()).unwrap();
