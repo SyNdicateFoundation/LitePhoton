@@ -33,6 +33,7 @@ fn main() {
 }
 
 /// Normal method, uses twoway, is not multithreaded.
+/// TODO: replace BufReader with MemMap2
 fn normal(file: &Path, keyword: &str) {
     let file = File::open(file).unwrap();
     let mut reader = BufReader::with_capacity(8 * 1024 * 1024, file);
@@ -61,6 +62,7 @@ fn normal(file: &Path, keyword: &str) {
 }
 
 /// Chunk method, uses twoway + rayon, is multithreaded.
+/// TODO: replace BufReader with MemMap2
 fn chunk(file: &Path, keyword: &str) {
     let file_size = file.metadata().unwrap().len();
     let num_workers = num_cpus::get().max(1) as u64;
