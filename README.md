@@ -48,4 +48,4 @@ You can also specify the search method using the `-m` option. The available meth
 
 
 ## Contribution Guidelines 🤝
-Feel free to contribute to the development of our bot. we will notice it.
+Feel free to contribute to the development of our project. we will notice it.
