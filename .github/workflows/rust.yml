@@ -68,7 +68,7 @@ jobs:
             echo "LitePhoton not found!"
             exit 1
           fi
-    - name: Upload XenonCord.jar
+    - name: Upload binary
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
