@@ -91,23 +91,25 @@ fn chunk(file: &Path, keyword: &str) {
 
             while pos < end {
                 buff.clear();
-                let bytes_read = reader.read_until(b'\n', &mut buff).unwrap();
-                if bytes_read == 0 {
-                    break;
-                }
-                pos = pos.saturating_add(bytes_read as u64);
+                 match reader.read_until(b'\n', &mut buff) {
+                    Ok(0) => break,
+                    Ok(bytes) => {
+                        pos = pos.saturating_add(bytes as u64);
 
-                let buff = if buff.ends_with(&[b'\n']) {&buff[..buff.len() - 1]}
-                else {&buff[..]};
+                        let buff = if buff.ends_with(&[b'\n']) {&buff[..buff.len() - 1]}
+                        else {&buff[..]};
 
-                if keyword.len() <= buff.len() && twoway::find_bytes(buff, &**keyword).is_some() {
-                    let mut out_line = Vec::with_capacity(buff.len() + 1);
-                    out_line.extend_from_slice(buff);
-                    out_line.push(b'\n');
+                        if keyword.len() <= buff.len() && twoway::find_bytes(buff, &**keyword).is_some() {
+                            let mut out_line = Vec::with_capacity(buff.len() + 1);
+                            out_line.extend_from_slice(buff);
+                            out_line.push(b'\n');
 
-                    stdout().write_all(&out_line).expect("Can't write results");
-                    stdout().flush().expect("Can't flush the console");
-                }
+                            stdout().write_all(&out_line).expect("Can't write results");
+                            stdout().flush().expect("Can't flush the console");
+                        }
+                    }
+                    Err(_) => {},
+                };
             }
         }));
     }
