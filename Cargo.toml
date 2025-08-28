@@ -11,4 +11,5 @@ twoway = "0.2.2"
 rayon = "1.10.0"
 
 [profile.release]
-#debug = true # uncomment this only when flamegraph needed / or profiling
+#debug = true ## uncomment this only when flamegraph needed / or profiling
+
