@@ -17,7 +17,7 @@ To use LitePhoton, you'll need to have Rust installed on your system. You can do
 Once you have Rust installed, you can clone the LitePhoton repository and build the project:
 
 ```
-git clone https://github.com/your-username/LitePhoton.git
+git clone https://github.com/SyNdicateFoundation/LitePhoton.git
 cd LitePhoton
 cargo build --release
 ```
