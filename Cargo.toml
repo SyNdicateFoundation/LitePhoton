@@ -9,6 +9,7 @@ log4rs = "1.4.0-rc2"
 num_cpus = "1.17.0"
 twoway = "0.2.2"
 rayon = "1.10.0"
+atty = "0.2.14"
 
 [profile.release]
 #debug = true ## uncomment this only when flamegraph needed / or profiling
