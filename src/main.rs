@@ -1,23 +1,27 @@
 use crate::argument_parser::ARGUMENTS;
 use crate::enviroment::{Environment, ENVIRONMENT};
-use crate::logger::{log_error, log_info};
+use crate::input::Input;
+use crate::logger::log_info;
+use crate::read_util::Mode;
+use std::fs::File;
+use std::io::stdin;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::OnceLock;
 
 mod logger;
 mod argument_parser;
 mod enviroment;
-mod file_util;
+mod read_util;
+mod input;
 
 /// Entry point
 fn main() {
-    IS_STDIN.set(atty::is(atty::Stream::Stdin)).unwrap();
+    IS_STDIN.set(atty::is(atty::Stream::Stdin)).ok();
 
     argument_parser::parse_arguments();
 
-    let args = ARGUMENTS.get().unwrap();
-
-    Environment::setup(args);
+    Environment::setup(ARGUMENTS.get().unwrap());
 
     let env = ENVIRONMENT.get().unwrap();
 
@@ -25,37 +29,15 @@ fn main() {
 
     log_info(&format!("Starting up LitePhoton with this environment: {:?}", env));
 
-    if !*IS_STDIN.get().unwrap() {
-        log_info("Not running in stdin mode, probably | is used in the command to run the program.");
-        file_util::tty(&args.keyword);
-        if !args.bypass_stdin_check {
-            return;
-        }
-    }
+    let stdin = Input::Stdin(&stdin());
 
-    // FIle mode, either echo the file content or scan it
-    if !env.file.is_empty(){
-        let file = Path::new(&env.file);
-
-        // echo file
-        if env.keyword.is_empty(){
-            file_util::echo(file);
-            return;
-        }
-
-        match env.method.as_str() {
-            "chunk" => {
-                file_util::chunk(file, &env.keyword);
-            }
-            "normal" => {
-                file_util::normal(file, &env.keyword);
-            }
-            _ => {
-                log_error(&format!("Method not found: {}", env.method));
-            }
-        }
-        return;
-    }
+    read_util::read_input(Mode::from_str(&env.method).unwrap(),
+                          if !*IS_STDIN.get().unwrap() && !env.bypass_stdin_check {
+                                  stdin
+                              } else {
+                                  Input::File(File::open(Path::new(&env.file)).unwrap())
+                              }
+                          , &env.keyword);
 }
 
 static IS_STDIN: OnceLock<bool> = OnceLock::new();

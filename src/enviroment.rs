@@ -5,6 +5,7 @@ use std::sync::OnceLock;
 #[derive(Debug)]
 pub struct Environment {
     pub debug: bool,
+    pub bypass_stdin_check: bool,
     pub file: String,
     pub keyword: String,
     pub method: String,
@@ -17,6 +18,7 @@ impl Environment {
     fn get(args: &Arguments) -> Environment {
         Environment {
             debug: Self::get_val(args, args.debug.into(), true.into()),
+            bypass_stdin_check: Self::get_val(args, args.bypass_stdin_check.into(), true),
             file: Self::get_val(args, args.file.clone(), String::new().into()),
             keyword: Self::get_val(args, args.keyword.clone(), String::new().into()),
             method: Self::get_val(args, args.method.clone(), String::new().into()),
