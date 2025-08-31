@@ -22,8 +22,6 @@ pub struct Arguments {
 
 impl Arguments {
     pub fn to_lowercase(mut self) -> Self {
-        self.file = self.file.to_lowercase();
-        self.keyword = self.keyword.to_lowercase();
         self.method = self.method.to_lowercase();
         self
     }
