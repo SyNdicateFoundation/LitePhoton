@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use crate::logger::log_error;
 use std::fs::File;
 use std::io;
@@ -8,6 +9,16 @@ use std::io::{Error, ErrorKind, Read, Seek, SeekFrom, Stdin};
 pub enum Input<'r> {
     Stdin(&'r Stdin),
     File(File),
+}
+
+impl<'r> PartialEq for Input<'r> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Input::Stdin(_), Input::Stdin(_)) => true,
+            (Input::File(_), Input::File(_)) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Read for Input<'_> {

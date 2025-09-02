@@ -1,11 +1,13 @@
-use crate::enviroment::ENVIRONMENT;
+use crate::environment::ENVIRONMENT;
 use crate::input::Input;
 use std::borrow::Cow;
 use std::io::{stdout, BufRead, BufReader, BufWriter, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::cmp;
+use std::{cmp, io};
+use log::error;
 use strum_macros::EnumString;
+use crate::logger::log_error;
 /*
 TODO: Use MemMap2 instead of bufreader
 TODO: do memory calculations to avoid messing up system resources
@@ -20,8 +22,12 @@ pub enum Mode{
     Chunk,
 }
 
+pub fn read_input(mut mode: Mode, input: Input<'_>, keyword: &str) {
+    if mode == Mode::Chunk && input.eq(&Input::Stdin(&io::stdin())){
+        log_error("Selected mode (chunk) is impossible with current input (stdin). falling back to normal mode.");
+        mode = Mode::Normal;
+    }
 
-pub fn read_input(mode: Mode, input: Input<'_>, keyword: &str) {
     match mode {
         Mode::Normal => {
             let mut writer = BufWriter::new(stdout());
@@ -50,7 +56,10 @@ pub fn read_input(mode: Mode, input: Input<'_>, keyword: &str) {
         Mode::Chunk => {
             let input = match input {
                 Input::File(file) => Input::File(file.try_clone().expect("clone file")),
-                Input::Stdin(_) => panic!("Chunk method could not use std as it's input."),
+                Input::Stdin(_) => {
+                    error!("Could not use chunk mode while input is STDIN.");
+                    panic!("Could not use chunk mode while input is STDIN.");
+                },
             };
             let file = PathBuf::from(ENVIRONMENT.get().unwrap().file.clone());
             let file_size = file.metadata().unwrap().len();
