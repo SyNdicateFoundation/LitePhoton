@@ -112,8 +112,8 @@ pub fn read_input(mode: Mode, input: Input, keyword: &str) {
                     let file_size = input.metadata().unwrap().len();
                     let mmap = unsafe { Mmap::map(&input.open_file().unwrap()).expect("Failed to mmap file") };
                     let mmap = Arc::new(mmap);
-                    let num_workers = cmp::max(1, cmp::min(num_cpus::get(), 64)) as u64;
-                    let chunk_size = if file_size == 0 {0} else {(file_size + num_workers - 1) / num_workers};
+                    let num_workers = num_cpus::get().max(1) as u64;
+                    let chunk_size = if file_size == 0 { 0 } else { file_size / num_workers };
                     let keyword: Arc<Cow<[u8]>> = Arc::new(keyword);
                     let mut handlers = Vec::with_capacity(num_workers as usize);
 
@@ -121,11 +121,6 @@ pub fn read_input(mode: Mode, input: Input, keyword: &str) {
                         let keyword = keyword.clone();
                         let mmap = mmap.clone();
                         let begin = id * chunk_size;
-
-                        if begin >= file_size {
-                            continue;
-                        }
-
                         let end = cmp::max(
                             if id == num_workers - 1 { file_size } else { begin + chunk_size },
                             begin,
