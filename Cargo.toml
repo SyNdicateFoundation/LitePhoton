@@ -12,6 +12,7 @@ rayon = "1.10.0"
 atty = "0.2.14"
 strum = "0.27.2"
 strum_macros = "0.27.2"
+memmap2 = "0.9.8"
 
 [profile.release]
 #debug = true ## uncomment this only when flamegraph needed / or profiling
