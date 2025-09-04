@@ -1,7 +1,7 @@
 use crate::input::Input;
 use crate::logger::log_error;
 use std::borrow::Cow;
-use std::io::{stdout, BufRead, BufReader, BufWriter, Seek, SeekFrom, Write};
+use std::io::{stdout, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::{cmp};
 use log::error;
@@ -20,7 +20,7 @@ pub enum Mode{
     Chunk,
 }
 
-pub fn read_input(mut mode: Mode, input: Input<'_>, keyword: &str) {
+pub fn read_input(mut mode: Mode, input: Input, keyword: &str) {
     if mode == Mode::Chunk && matches!(input, Input::Stdin(_)) {
         log_error("Selected mode (chunk) is impossible with current input (stdin). falling back to normal mode.");
         mode = Mode::Normal;
@@ -32,23 +32,44 @@ pub fn read_input(mut mode: Mode, input: Input<'_>, keyword: &str) {
         Mode::Normal => {
             let mut writer = BufWriter::new(stdout());
             let mut reader = BufReader::with_capacity(8 * 1024, input.open_file().unwrap());
-            let mut buff = Vec::with_capacity(8 * 1024);
+            let mut read_buff = [0u8; 8 * 1024];
+            let mut line_buff = Vec::with_capacity(8 * 1024);
 
             loop {
-                buff.clear();
-
-                match reader.read_until(b'\n', &mut buff) {
+                match reader.read(&mut read_buff) {
                     Ok(0) => {
                         writer.write_all(b"\n").expect("Can't write \\n");
                         writer.flush().expect("failed to flush writer");
                         break;
                     }
-                    Ok(_) => {
-                        if !keyword.is_empty() && !twoway::find_bytes(&buff, &keyword).is_some(){
+                    Ok(size) => {
+                        line_buff.extend_from_slice(&read_buff[..size]);
+
+                        let mut begin = 0usize;
+                        let mut i = 0usize;
+
+                        while i < line_buff.len() {
+                            if line_buff[i] == b'\n' {
+                                let line = &line_buff[begin..=i];
+
+                                if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                    writer.write_all(line).expect("Can't write results");
+                                }
+
+                                begin = i + 1;
+                            }
+                            i += 1;
+                        }
+
+                        if begin == 0 {
                             continue;
                         }
 
-                        writer.write_all(&buff).expect("Can't write results");
+                        if begin < line_buff.len() {
+                            line_buff.drain(0..begin);
+                        } else {
+                            line_buff.clear();
+                        }
                     }
                     Err(_) =>{
                         writer.flush().expect("failed to flush writer");
@@ -86,32 +107,53 @@ pub fn read_input(mut mode: Mode, input: Input<'_>, keyword: &str) {
                 handlers.push(rayon::spawn(move || {
                     let mut reader = BufReader::with_capacity(8 * 1024 * 1024, input.open_file().unwrap());
                     let mut writer = BufWriter::new(stdout().lock());
-                    let mut buff = Vec::with_capacity(8 * 1024);
+                    let mut read_buff = [0u8; 8 * 1024];
+                    let mut line_buff = Vec::with_capacity(8 * 1024);
                     let mut pos = begin;
 
                     reader.seek(SeekFrom::Start(begin)).unwrap();
 
                     if begin > 0 {
-                        buff.clear();
-                        pos = pos.saturating_add(reader.read_until(b'\n', &mut buff).unwrap() as u64);
+                        pos = pos.saturating_add(reader.read(&mut read_buff).unwrap() as u64);
                     }
 
                     while pos < end {
-                        buff.clear();
-                        match reader.read_until(b'\n', &mut buff) {
+                        match reader.read(&mut read_buff) {
                             Ok(0) => {
                                 writer.write_all(b"\n").expect("Can't write \\n");
                                 writer.flush().expect("failed to flush writer");
                                 break;
                             },
-                            Ok(bytes) => {
-                                pos = pos.saturating_add(bytes as u64);
+                            Ok(size) => {
+                                pos = pos.saturating_add(size as u64);
 
-                                if !keyword.is_empty() && !twoway::find_bytes(&buff, keyword.as_ref()).is_some(){
+                                line_buff.extend_from_slice(&read_buff[..size]);
+
+                                let mut begin = 0usize;
+                                let mut i = 0usize;
+
+                                while i < line_buff.len() {
+                                    if line_buff[i] == b'\n' {
+                                        let line = &line_buff[begin..=i];
+
+                                        if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                            writer.write_all(line).expect("Can't write results");
+                                        }
+
+                                        begin = i + 1;
+                                    }
+                                    i += 1;
+                                }
+
+                                if begin == 0 {
                                     continue;
                                 }
 
-                                writer.write_all(&buff).expect("Can't write results");
+                                if begin < line_buff.len() {
+                                    line_buff.drain(0..begin);
+                                } else {
+                                    line_buff.clear();
+                                }
                             }
                             Err(_) => {
                                 writer.flush().expect("failed to flush writer");

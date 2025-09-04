@@ -3,7 +3,6 @@ use crate::environment::{Environment, ENVIRONMENT};
 use crate::input::Input;
 use crate::logger::log_info;
 use crate::read_util::Mode;
-use std::io::stdin;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::OnceLock;
@@ -28,13 +27,12 @@ fn main() {
 
     log_info(&format!("Starting up LitePhoton with this environment: {:?}", env));
 
-    let stdin = Input::Stdin(&stdin());
 
     read_util::read_input(Mode::from_str(&env.method).unwrap(),
                           if !*IS_STDIN.get().unwrap() && !env.bypass_stdin_check {
-                                  stdin
+                                    Input::Stdin(())
                               } else {
-                                  Input::File(PathBuf::from(&env.file))
+                                    Input::File(PathBuf::from(&env.file))
                               }
                           , &env.keyword);
 }

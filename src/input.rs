@@ -1,28 +1,25 @@
 use crate::logger::log_error;
 use std::fs::{File, Metadata};
 use std::io;
-use std::io::{Error, ErrorKind, Stdin};
+use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
-/// Define input
-/// This is to use BufReader with multiple definitions (cleaner code)
-pub enum Input<'r> {
-    Stdin(&'r Stdin),
+pub enum Input {
+    Stdin(()),
     File(PathBuf),
 }
 
-impl Input<'_> {
+impl Input {
     pub fn open_file(&self) -> io::Result<File> {
-        match self{
+        match self {
             Input::Stdin(_) => {
                 log_error("Cannot open_file stdin");
                 Err(Error::new(ErrorKind::InvalidInput, "Cannot open_file stdin"))
-            },
-            Input::File(f) => {
-                File::open(f.clone())
             }
+            Input::File(f) => File::open(f),
         }
     }
+
     pub fn metadata(&self) -> io::Result<Metadata> {
         match self {
             Input::Stdin(_) => {
@@ -34,10 +31,10 @@ impl Input<'_> {
     }
 }
 
-impl<'r> Clone for Input<'r> {
-    fn clone(&self) -> Input<'r> {
+impl Clone for Input {
+    fn clone(&self) -> Input {
         match self {
-            Input::Stdin(s) => Input::Stdin(*s),
+            Input::Stdin(_) => Input::Stdin(()),
             Input::File(f) => Input::File(f.clone()),
         }
     }
