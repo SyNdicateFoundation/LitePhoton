@@ -1,14 +1,12 @@
 use crate::argument_parser::ARGUMENTS;
 use crate::environment::{Environment, ENVIRONMENT};
 use crate::input::Input;
-use crate::logger::{log_info};
+use crate::logger::log_info;
 use crate::read_util::Mode;
-use std::fs::File;
 use std::io::stdin;
-use std::path::Path;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::OnceLock;
-use log::error;
 
 mod logger;
 mod argument_parser;
@@ -36,14 +34,7 @@ fn main() {
                           if !*IS_STDIN.get().unwrap() && !env.bypass_stdin_check {
                                   stdin
                               } else {
-                                  let file = match File::open(Path::new(&env.file)) {
-                                      Ok(file) => file,
-                                      Err(_) => {
-                                          error!("Failed to open the file. please, either check file permissions, or either specify a file with -f.");
-                                          panic!("Failed to open the file. please, either check file permissions, or either specify a file with -f.");
-                                      },
-                                  };
-                                  Input::File(file)
+                                  Input::File(PathBuf::from(&env.file))
                               }
                           , &env.keyword);
 }
