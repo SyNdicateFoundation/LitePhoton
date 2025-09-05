@@ -1,3 +1,4 @@
+use rayon::iter::ParallelIterator;
 use crate::input::Input;
 use std::borrow::Cow;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
@@ -5,6 +6,7 @@ use std::sync::Arc;
 use std::{cmp};
 use log::error;
 use memmap2::Mmap;
+use rayon::iter::IntoParallelRefIterator;
 use strum_macros::EnumString;
 // use crate::environment::ENVIRONMENT;
 
@@ -161,49 +163,48 @@ pub fn read_input(mode: Mode, input: Input, unstable: bool, keyword: &str) {
                             let _ = handler.join();
                         }
                     } else {
-                        let mut handlers = Vec::with_capacity(num_workers as usize);
-                        for id in 0..num_workers {
-                            let keyword = keyword.clone();
-                            let mmap = mmap.clone();
-                            let begin = id * chunk_size;
-                            let end = cmp::max(
-                                if id == num_workers - 1 { file_size } else { begin + chunk_size },
-                                begin,
-                            );
+                        let mmap = Arc::new(mmap);
+                        let keyword = Arc::new(keyword);
 
-                            handlers.push(rayon::spawn(move || {
-                                let mut writer = BufWriter::new(stdout());
-                                let mut line_buff = Vec::with_capacity(8 * 1024);
-                                let mut pos = begin as usize;
+                        let handlers: Vec<(usize, usize)> = (0..num_workers)
+                            .map(|id| {
+                                let begin: usize = (id * chunk_size) as usize;
+                                let end: usize = cmp::max(
+                                    if id == num_workers - 1 { file_size as usize } else { begin + chunk_size as usize },
+                                    begin,
+                                );
+                                (begin, end)
+                            })
+                            .collect();
 
-                                while pos < end as usize {
-                                    let read_buff = mmap[pos];
+                        handlers.par_iter().for_each(|&(begin, end)| {
+                            let mmap = Arc::clone(&mmap);
+                            let keyword = Arc::clone(&keyword);
+                            let mut writer = BufWriter::new(stdout());
+                            let mut line_buff = Vec::with_capacity(8 * 1024);
+                            let mut pos = begin;
 
-                                    line_buff.push(read_buff);
+                            while pos < end {
+                                let read_buff = mmap[pos];
 
-                                    if read_buff == b'\n' {
-                                        if keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some() {
-                                            writer.write_all(&line_buff).expect("Can't write results");
-                                        }
+                                line_buff.push(read_buff);
 
-                                        line_buff.clear();
+                                if read_buff == b'\n' {
+                                    if keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some() {
+                                        writer.write_all(&line_buff).expect("Can't write results");
                                     }
 
-                                    pos += 1;
+                                    line_buff.clear();
                                 }
 
-                                if !line_buff.is_empty() && (keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some()) {
-                                    writer.write_all(&line_buff).expect("Can't write results");
-                                }
-
-                                writer.flush().expect("failed to flush writer");
-                            }));
-                        }
-
-                        rayon ::scope(|_| {
-                            for handler in handlers{
-                                let _ = handler;
+                                pos += 1;
                             }
+
+                            if !line_buff.is_empty() && (keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some()) {
+                                writer.write_all(&line_buff).expect("Can't write results");
+                            }
+
+                            writer.flush().expect("failed to flush writer");
                         });
                     }
                 }
