@@ -34,7 +34,7 @@ fn main() {
                               } else {
                                     Input::File(PathBuf::from(&env.file))
                               }
-                          , &env.keyword);
+                          , env.unstable, &env.keyword);
 }
 
 static IS_STDIN: OnceLock<bool> = OnceLock::new();
