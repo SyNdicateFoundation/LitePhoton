@@ -1,9 +1,9 @@
+use crate::environment::ENVIRONMENT;
 use log::{error, info, LevelFilter};
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Config;
-use crate::environment::ENVIRONMENT;
 
 pub fn setup_logger(){
     log4rs::init_config(Config::builder()

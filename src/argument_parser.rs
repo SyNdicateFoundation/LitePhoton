@@ -9,8 +9,8 @@ pub struct Arguments {
     pub debug: bool,
     #[arg(short, long, default_value = "false")]
     pub bypass_stdin_check: bool,
-    #[arg(short, long, default_value = "false")]
-    pub unstable: bool,
+    #[arg(short, long, action = clap::ArgAction::Set, default_value = "true")]
+    pub stable: bool,
     #[arg(short, long, default_value = "")]
     pub file: String,
     #[arg(short, long, default_value = "")]
