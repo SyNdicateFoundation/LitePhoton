@@ -119,6 +119,7 @@ pub fn read_input(mode: Mode, input: Input, stable: bool, keyword: &str) {
 
                     if stable {
                         let mut handlers = Vec::with_capacity(num_workers as usize);
+
                         for id in 0..num_workers {
                             let keyword = keyword.clone();
                             let mmap = mmap.clone();
@@ -170,6 +171,7 @@ pub fn read_input(mode: Mode, input: Input, stable: bool, keyword: &str) {
                                     if id == num_workers - 1 { file_size } else { begin + chunk_size },
                                     begin,
                                 );
+
                                 scope.spawn(move |_| {
                                     let mut writer = BufWriter::new(stdout());
                                     let mut line_buff = Vec::with_capacity(8 * 1024);
