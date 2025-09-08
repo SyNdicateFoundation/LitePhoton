@@ -3,11 +3,9 @@ use std::borrow::Cow;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::sync::Arc;
 use std::{cmp};
-use libc::{read, STDIN_FILENO};
 use log::error;
 use memmap2::Mmap;
 use strum_macros::EnumString;
-use crate::is_linux;
 
 /// Modes of reading
 /// Uses strum lib to convert Enums into Strings and parse them
@@ -25,91 +23,48 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
     match input {
         // Use BufReader with stdin
         Input::Stdin(_) => {
-            if is_linux()
-            {
-                let mut read_buff = [0u8; 8 * 1024];
-                let mut line_buff = Vec::with_capacity(8 * 1024);
-                loop{
-                    let size = unsafe { read(STDIN_FILENO, read_buff.as_mut_ptr() as *mut _, read_buff.len()) } as usize;
+            let mut reader = BufReader::with_capacity(8 * 1024, stdin());
+            let mut read_buff = [0u8; 8 * 1024];
+            let mut line_buff = Vec::with_capacity(8 * 1024);
 
-                    if size <= 0 {
+            loop {
+                match reader.read(&mut read_buff) {
+                    Ok(0) => {
                         writer.write_all(b"\n").expect("Can't write \\n");
                         writer.flush().expect("failed to flush writer");
                         break;
                     }
+                    Ok(size) => {
+                        line_buff.extend_from_slice(&read_buff[..size]);
 
-                    line_buff.extend_from_slice(&read_buff[..size]);
+                        let mut begin = 0usize;
+                        let mut i = 0usize;
 
-                    let mut begin = 0usize;
-                    let mut i = 0usize;
+                        while i < line_buff.len() {
+                            if line_buff[i] == b'\n' {
+                                let line = &line_buff[begin..=i];
 
-                    while i < line_buff.len() {
-                        if line_buff[i] == b'\n' {
-                            let line = &line_buff[begin..=i];
-
-                            if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
-                                writer.write_all(line).expect("Can't write results");
-                            }
-
-                            begin = i + 1;
-                        }
-                        i += 1;
-                    }
-
-                    if begin == 0 {
-                        continue;
-                    }
-
-                    if begin < line_buff.len() {
-                        line_buff.drain(0..begin);
-                    } else {
-                        line_buff.clear();
-                    }
-                }
-            } else {
-                let mut reader = BufReader::with_capacity(8 * 1024, stdin());
-                let mut read_buff = [0u8; 8 * 1024];
-                let mut line_buff = Vec::with_capacity(8 * 1024);
-
-                loop {
-                    match reader.read(&mut read_buff) {
-                        Ok(0) => {
-                            writer.write_all(b"\n").expect("Can't write \\n");
-                            writer.flush().expect("failed to flush writer");
-                            break;
-                        }
-                        Ok(size) => {
-                            line_buff.extend_from_slice(&read_buff[..size]);
-
-                            let mut begin = 0usize;
-                            let mut i = 0usize;
-
-                            while i < line_buff.len() {
-                                if line_buff[i] == b'\n' {
-                                    let line = &line_buff[begin..=i];
-
-                                    if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
-                                        writer.write_all(line).expect("Can't write results");
-                                    }
-
-                                    begin = i + 1;
+                                if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                    writer.write_all(line).expect("Can't write results");
                                 }
-                                i += 1;
-                            }
 
-                            if begin == 0 {
-                                continue;
+                                begin = i + 1;
                             }
+                            i += 1;
+                        }
 
-                            if begin < line_buff.len() {
-                                line_buff.drain(0..begin);
-                            } else {
-                                line_buff.clear();
-                            }
+                        if begin == 0 {
+                            continue;
                         }
-                        Err(_) =>{
-                            writer.flush().expect("failed to flush writer");
+
+                        if begin < line_buff.len() {
+                            line_buff.drain(0..begin);
+                        } else {
+                            line_buff.clear();
                         }
+                    }
+                    Err(_) =>{
+                        writer.flush().expect("failed to flush writer");
                     }
                 }
             }

@@ -14,7 +14,6 @@ strum = "0.27.2"
 strum_macros = "0.27.2"
 memmap2 = "0.9.8"
 memchr = "2.7.5"
-libc = "1.0.0-alpha.1"
 
 [profile.release]
 #debug = true ## uncomment this only when flamegraph needed / or profiling
