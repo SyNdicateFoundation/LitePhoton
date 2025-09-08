@@ -37,4 +37,10 @@ fn main() {
                           , env.stable, &env.keyword);
 }
 
+fn is_linux() -> bool {
+    #[cfg(target_os = "linux")]
+    true;
+
+    false
+}
 static IS_STDIN: OnceLock<bool> = OnceLock::new();
