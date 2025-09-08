@@ -6,7 +6,6 @@ use std::{cmp};
 use log::error;
 use memmap2::Mmap;
 use strum_macros::EnumString;
-// use crate::environment::ENVIRONMENT;
 
 /// Modes of reading
 /// Uses strum lib to convert Enums into Strings and parse them
@@ -17,7 +16,7 @@ pub enum Mode{
     Chunk,
 }
 
-pub fn read_input(mode: Mode, input: Input, stable: bool, keyword: &str) {
+pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
     let mut writer = BufWriter::new(stdout());
     let keyword: Cow<[u8]> = Cow::Owned(keyword.as_bytes().to_vec());
 
@@ -79,28 +78,27 @@ pub fn read_input(mode: Mode, input: Input, stable: bool, keyword: &str) {
 
             match mode {
                 Mode::Normal => {
-                    let mmap = unsafe { Mmap::map(&input.open_file().unwrap()) }.expect("Failed to map file");
+                    let mmap = map_file(input).unwrap();
                     let mut begin = 0usize;
+                    let mut i = 0usize;
 
-                    for (i, &byte) in mmap.iter().enumerate() {
-                        if byte == b'\n' {
-                            let line = &mmap[begin..=i];
-                            if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
-                                writer.write_all(line).expect("Can't write results");
+                    while i < mmap.len(){
+                        match memchr::memchr(b'\n', &mmap[i..]) {
+                            Some(pos) => {
+                                let end = i + pos;
+                                let line = &mmap[begin..=end];
+                                if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                    writer.write_all(line).expect("Can't write \\n");
+                                }
+                                begin = end + 1;
+                                i = begin;
                             }
-                            begin = i + 1;
+                            None => {
+                                writer.flush().expect("failed to flush writer");
+                                break;
+                            }
                         }
                     }
-
-                    if begin < mmap.len() {
-                        let line = &mmap[begin..];
-                        if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
-                            writer.write_all(line).expect("Can't write results");
-                            writer.write_all(b"\n").expect("Can't write newline");
-                        }
-                    }
-
-                    writer.flush().expect("failed to flush writer");
                 }
                 Mode::Chunk => {
                     let input = match input {
@@ -108,18 +106,16 @@ pub fn read_input(mode: Mode, input: Input, stable: bool, keyword: &str) {
                         Input::Stdin(_) => {
                             error!("Could not use chunk mode while input is STDIN.");
                             panic!("Could not use chunk mode while input is STDIN.");
-                        },
+                        }
                     };
                     let file_size = input.metadata().unwrap().len();
-                    let mmap = unsafe { Mmap::map(&input.open_file().unwrap()).expect("Failed to mmap file") };
+                    let mmap = map_file(input).unwrap();
                     let mmap = Arc::new(mmap);
                     let num_workers = num_cpus::get().max(1) as u64;
                     let chunk_size = if file_size == 0 { 0 } else { file_size / num_workers };
                     let keyword: Arc<Cow<[u8]>> = Arc::new(keyword);
 
-                    if stable {
-                        let mut handlers = Vec::with_capacity(num_workers as usize);
-
+                    rayon::scope(move |scope| {
                         for id in 0..num_workers {
                             let keyword = keyword.clone();
                             let mmap = mmap.clone();
@@ -127,83 +123,56 @@ pub fn read_input(mode: Mode, input: Input, stable: bool, keyword: &str) {
                             let end = cmp::max(
                                 if id == num_workers - 1 { file_size } else { begin + chunk_size },
                                 begin,
-                            );
+                            ) as usize;
 
-                            handlers.push(std::thread::spawn(move || {
+                            scope.spawn(move |_| {
                                 let mut writer = BufWriter::new(stdout());
-                                let mut line_buff = Vec::with_capacity(8 * 1024);
                                 let mut pos = begin as usize;
+                                let mmap = &mmap[..];
 
-                                while pos < end as usize {
-                                    let read_buff = mmap[pos];
+                                while pos < end {
+                                    match memchr::memchr(b'\n', &mmap[pos..end]) {
+                                        Some(size) => {
+                                            let end = pos + size + 1;
+                                            let line = &mmap[pos..end];
 
-                                    line_buff.push(read_buff);
-
-                                    if read_buff == b'\n' {
-                                        if keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some() {
-                                            writer.write_all(&line_buff).expect("Can't write results");
-                                        }
-
-                                        line_buff.clear();
-                                    }
-
-                                    pos += 1;
-                                }
-
-                                if !line_buff.is_empty() && (keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some()) {
-                                    writer.write_all(&line_buff).expect("Can't write results");
-                                }
-
-                                writer.flush().expect("failed to flush writer");
-                            }));
-                        }
-
-                        for handler in handlers{
-                            let _ = handler.join();
-                        }
-                    } else {
-                        rayon::scope(move |scope| {
-                            for id in 0..num_workers {
-                                let keyword = keyword.clone();
-                                let mmap = mmap.clone();
-                                let begin = id * chunk_size;
-                                let end = cmp::max(
-                                    if id == num_workers - 1 { file_size } else { begin + chunk_size },
-                                    begin,
-                                );
-
-                                scope.spawn(move |_| {
-                                    let mut writer = BufWriter::new(stdout());
-                                    let mut line_buff = Vec::with_capacity(8 * 1024);
-                                    let mut pos = begin as usize;
-
-                                    while pos < end as usize {
-                                        let read_buff = mmap[pos];
-
-                                        line_buff.push(read_buff);
-
-                                        if read_buff == b'\n' {
-                                            if keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some() {
-                                                writer.write_all(&line_buff).expect("Can't write results");
+                                            if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                                writer.write_all(line).expect("Can't write results");
                                             }
 
-                                            line_buff.clear();
+                                            pos = end;
                                         }
+                                        None => {
+                                            let slice = &mmap[pos..end];
 
-                                        pos += 1;
+                                            if !slice.is_empty() && (keyword.is_empty() || twoway::find_bytes(slice, &keyword).is_some()) {
+                                                writer.write_all(slice).expect("Can't write results");
+                                            }
+
+                                            writer.flush().expect("failed to flush \\n");
+                                            break;
+                                        }
                                     }
+                                }
 
-                                    if !line_buff.is_empty() && (keyword.is_empty() || twoway::find_bytes(&line_buff, &keyword).is_some()) {
-                                        writer.write_all(&line_buff).expect("Can't write results");
-                                    }
-
-                                    writer.flush().expect("failed to flush writer");
-                                });
-                            }
-                        });
-                    }
+                                writer.write_all(b"\n").expect("Can't write newline");
+                                writer.flush().expect("failed to flush writer");
+                            });
+                        }
+                    });
                 }
             }
         }
+    }
+}
+
+fn map_file(input: Input) -> std::io::Result<Mmap> {
+    match unsafe { Mmap::map(&input.open_file()?) } {
+        Ok(mmap) => Ok(mmap),
+        Err(err) => {
+            error!("Failed to memory map the file. please, check the error below:");
+            error!("{}", err);
+            panic!("Failed to memory map the file. please, check the error below:");
+        },
     }
 }
