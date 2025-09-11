@@ -16,5 +16,7 @@ memmap2 = "0.9.8"
 memchr = "2.7.5"
 
 [profile.release]
+lto = true
+opt-level = "s"
 #debug = true ## uncomment this only when flamegraph needed / or profiling
 
