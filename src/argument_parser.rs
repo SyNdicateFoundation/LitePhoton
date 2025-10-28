@@ -11,8 +11,8 @@ pub struct Arguments {
     pub bypass_stdin_check: bool,
     #[arg(short, long, action = clap::ArgAction::Set, default_value = "true")]
     pub stable: bool,
-    #[arg(short, long, default_value = "")]
-    pub file: String,
+    #[arg(short, long, num_args = 1..,default_value = "")]
+    pub file: Vec<String>,
     #[arg(short, long, default_value = "")]
     pub keyword: String,
     #[arg(short, long, default_value = "chunk")]
