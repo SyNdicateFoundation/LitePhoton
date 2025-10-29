@@ -28,15 +28,15 @@ fn main() {
     log_info(&format!("Starting up LitePhoton with this environment: {:?}", env));
 
 
-    // for file in &env.file {
+    for file in &env.file {
         read_util::read_input(Mode::from_str(&env.method).unwrap(),
                           if !*IS_STDIN.get().unwrap() && !env.bypass_stdin_check {
                                   Input::Stdin(())
                               } else {
-                                  Input::File(PathBuf::from(&env.file))
+                                  Input::File(PathBuf::from(file))
                               }
                           , env.stable, &env.keyword);
-    // }
+    }
 }
 
 static IS_STDIN: OnceLock<bool> = OnceLock::new();
