@@ -23,7 +23,7 @@ fn main() {
 
     let env = ENVIRONMENT.get().unwrap();
 
-    logger::setup_logger();
+    logger::setup_logger(env.debug.clone());
 
     log_info(&format!("Starting up LitePhoton with this environment: {:?}", env));
 
