@@ -16,7 +16,7 @@ memmap2 = "0.9.8"
 memchr = "2.7.5"
 
 [profile.release]
+codegen-units = 1
 lto = true
-opt-level = "s"
+opt-level = 3
 #debug = true ## uncomment this only when flamegraph needed / or profiling
-

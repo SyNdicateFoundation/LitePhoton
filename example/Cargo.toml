@@ -1,7 +1,12 @@
 [package]
 name = "example"
-version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 LitePhoton = {git = "https://github.com/SyNdicateFoundation/LitePhoton/"}
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+#debug = true ## uncomment this only when flamegraph needed / or profiling
