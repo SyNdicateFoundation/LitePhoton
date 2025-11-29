@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::{cmp};
 use log::error;
 use strum_macros::EnumString;
-use crate::read_util::common::{fail, flush, map_file, write_all};
+use crate::read_util::common::{fail, map_file, write_all};
 
 /// Modes of reading
 /// Uses strum lib to convert Enums into Strings and parse them
