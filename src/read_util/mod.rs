@@ -1,13 +1,12 @@
 mod common;
 
 use crate::input::Input;
-use std::borrow::Cow;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read};
 use std::sync::Arc;
 use std::{cmp};
 use log::error;
 use strum_macros::EnumString;
-use crate::read_util::common::{flush, map_file, write_all};
+use crate::read_util::common::{fail, flush, map_file, write_all};
 
 /// Modes of reading
 /// Uses strum lib to convert Enums into Strings and parse them
@@ -20,7 +19,7 @@ pub enum Mode{
 
 pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
     let mut writer = BufWriter::new(stdout());
-    let keyword: Cow<[u8]> = Cow::Owned(keyword.as_bytes().to_vec());
+    let keyword = keyword.as_bytes();
 
     match input {
         // Use BufReader with stdin
@@ -32,8 +31,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
             loop {
                 match reader.read(&mut read_buff) {
                     Ok(0) => {
-                        write_all(&mut writer, b"\n");
-                        flush(&mut writer);
+                        fail(&mut writer, b"\n");
                         break;
                     }
                     Ok(size) => {
@@ -46,7 +44,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             if line_buff[i] == b'\n' {
                                 let line = &line_buff[begin..=i];
 
-                                if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some() {
                                     write_all(&mut writer, line);
                                 }
 
@@ -66,7 +64,8 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                         }
                     }
                     Err(_) =>{
-                        flush(&mut writer);
+                        fail(&mut writer, b"\n");
+                        break;
                     }
                 }
             }
@@ -86,10 +85,14 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
 
                     while i < mmap.len(){
                         match memchr::memchr(b'\n', &mmap[i..]) {
+                            Some(0) => {
+                                flush(&mut writer);
+                                break;
+                            },
                             Some(pos) => {
                                 let end = i + pos;
                                 let line = &mmap[begin..=end];
-                                if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some() {
                                     write_all(&mut writer, line);
                                 }
                                 begin = end + 1;
@@ -115,7 +118,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                     let mmap = Arc::new(mmap);
                     let num_workers = num_cpus::get().max(1) as u64;
                     let chunk_size = if file_size == 0 { 0 } else { file_size / num_workers };
-                    let keyword: Arc<Cow<[u8]>> = Arc::new(keyword);
+                    let keyword: Arc<&[u8]> = Arc::new(keyword);
 
                     rayon::scope(move |scope| {
                         for id in 0..num_workers {
@@ -134,6 +137,10 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
 
                                 while pos < end {
                                     match memchr::memchr(b'\n', &mmap[pos..end]) {
+                                        Some(0) => {
+                                            flush(&mut writer);
+                                            break;
+                                        }
                                         Some(size) => {
                                             let end = pos + size + 1;
                                             let line = &mmap[pos..end];
@@ -148,17 +155,14 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                                             let slice = &mmap[pos..end];
 
                                             if !slice.is_empty() && (keyword.is_empty() || twoway::find_bytes(slice, &keyword).is_some()) {
-                                                write_all(&mut writer, slice);
+                                                fail(&mut writer, slice);
                                             }
-
-                                            flush(&mut writer);
                                             break;
                                         }
                                     }
                                 }
 
-                                write_all(&mut writer, b"\n");
-                                flush(&mut writer);
+                                fail(&mut writer, b"\n");
                             });
                         }
                     });

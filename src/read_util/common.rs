@@ -21,10 +21,16 @@ pub fn write_all<W>(writer: &mut BufWriter<W>, line: &[u8]) where W: Sized + Wri
         _ => {}
     }
 }
-
 pub fn flush<W>(writer: &mut BufWriter<W>) where W: Sized + Write {
     match writer.flush() {
         Err(_) => log_error("Cannot flush console, platform restriction?"),
         _ => {}
     }
 }
+
+pub fn fail<W>(writer: &mut BufWriter<W>, line: &[u8]) where W: Sized + Write {
+    write_all(writer, line);
+    flush(writer);
+}
+
+
