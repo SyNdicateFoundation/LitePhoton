@@ -14,15 +14,15 @@ pub struct Environment {
 impl Environment {
     fn get(args: &Arguments) -> Environment {
         Environment {
-            debug: args.debug.into(),
-            bypass_stdin_check: args.bypass_stdin_check.into(),
-            stable: args.stable.into(),
-            file:args.file.clone(),
-            keyword:args.keyword.clone(),
-            method:args.method.clone(),
+            debug: args.debug,
+            bypass_stdin_check: args.bypass_stdin_check,
+            stable: args.stable,
+            file: args.file.clone(),
+            keyword: args.keyword.clone(),
+            method: args.method.clone(),
         }
     }
-    pub fn setup(args: &Arguments){
+    pub fn setup(args: &Arguments) {
         ENVIRONMENT.set(Self::get(args)).unwrap();
     }
 }

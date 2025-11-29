@@ -1,18 +1,18 @@
 mod common;
 
 use crate::input::Input;
-use std::io::{stdin, stdout, BufReader, BufWriter, Read};
-use std::sync::Arc;
-use std::{cmp};
-use log::error;
-use strum_macros::EnumString;
 use crate::read_util::common::{fail, map_file, write_all};
+use log::error;
+use std::cmp;
+use std::io::{BufReader, BufWriter, Read, stdin, stdout};
+use std::sync::Arc;
+use strum_macros::EnumString;
 
 /// Modes of reading
 /// Uses strum lib to convert Enums into Strings and parse them
 #[derive(Debug, PartialEq, EnumString)]
 #[strum(serialize_all = "lowercase")]
-pub enum Mode{
+pub enum Mode {
     Normal,
     Chunk,
 }
@@ -44,7 +44,8 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             if line_buff[i] == b'\n' {
                                 let line = &line_buff[begin..=i];
 
-                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some() {
+                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some()
+                                {
                                     write_all(&mut writer, line);
                                 }
 
@@ -63,7 +64,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             line_buff.clear();
                         }
                     }
-                    Err(_) =>{
+                    Err(_) => {
                         fail(&mut writer, b"\n");
                         break;
                     }
@@ -72,9 +73,13 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
         }
         // Use MemMap2 with with the file
         Input::File(_) => {
-            if let Err(_) = input.open_file() {
-                error!("Failed to open the file. please, either check file permissions, or either specify a file with -f.");
-                panic!("Failed to open the file. please, either check file permissions, or either specify a file with -f.");
+            if input.open_file().is_err() {
+                error!(
+                    "Failed to open the file. please, either check file permissions, or either specify a file with -f."
+                );
+                panic!(
+                    "Failed to open the file. please, either check file permissions, or either specify a file with -f."
+                );
             }
 
             match mode {
@@ -83,16 +88,17 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                     let mut begin = 0usize;
                     let mut i = 0usize;
 
-                    while i < mmap.len(){
+                    while i < mmap.len() {
                         match memchr::memchr(b'\n', &mmap[i..]) {
                             Some(0) => {
                                 fail(&mut writer, b"");
                                 break;
-                            },
+                            }
                             Some(pos) => {
                                 let end = i + pos;
                                 let line = &mmap[begin..=end];
-                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some() {
+                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some()
+                                {
                                     write_all(&mut writer, line);
                                 }
                                 begin = end + 1;
@@ -117,7 +123,11 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                     let mmap = map_file(input).unwrap();
                     let mmap = Arc::new(mmap);
                     let num_workers = num_cpus::get().max(1) as u64;
-                    let chunk_size = if file_size == 0 { 0 } else { file_size / num_workers };
+                    let chunk_size = if file_size == 0 {
+                        0
+                    } else {
+                        file_size / num_workers
+                    };
                     let keyword: Arc<&[u8]> = Arc::new(keyword);
 
                     rayon::scope(move |scope| {
@@ -126,7 +136,11 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             let mmap = mmap.clone();
                             let begin = id * chunk_size;
                             let end = cmp::max(
-                                if id == num_workers - 1 { file_size } else { begin + chunk_size },
+                                if id == num_workers - 1 {
+                                    file_size
+                                } else {
+                                    begin + chunk_size
+                                },
                                 begin,
                             ) as usize;
 
@@ -145,7 +159,9 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                                             let end = pos + size + 1;
                                             let line = &mmap[pos..end];
 
-                                            if keyword.is_empty() || twoway::find_bytes(line, &keyword).is_some() {
+                                            if keyword.is_empty()
+                                                || twoway::find_bytes(line, &keyword).is_some()
+                                            {
                                                 write_all(&mut writer, line);
                                             }
 
@@ -154,7 +170,11 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                                         None => {
                                             let slice = &mmap[pos..end];
 
-                                            if !slice.is_empty() && (keyword.is_empty() || twoway::find_bytes(slice, &keyword).is_some()) {
+                                            if !slice.is_empty()
+                                                && (keyword.is_empty()
+                                                    || twoway::find_bytes(slice, &keyword)
+                                                        .is_some())
+                                            {
                                                 fail(&mut writer, slice);
                                             }
                                             break;

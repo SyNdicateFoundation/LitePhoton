@@ -29,10 +29,8 @@ impl Arguments {
     }
 }
 
-pub fn parse_arguments(){
-    ARGUMENTS.set(
-        Arguments::parse().to_lowercase()
-    ).unwrap();
+pub fn parse_arguments() {
+    ARGUMENTS.set(Arguments::parse().to_lowercase()).unwrap();
 }
 
 pub static ARGUMENTS: OnceLock<Arguments> = OnceLock::new();

@@ -14,7 +14,10 @@ impl Input {
         match self {
             Input::Stdin(_) => {
                 log_error("Cannot open_file stdin");
-                Err(Error::new(ErrorKind::InvalidInput, "Cannot open_file stdin"))
+                Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "Cannot open_file stdin",
+                ))
             }
             Input::File(f) => File::open(f),
         }
