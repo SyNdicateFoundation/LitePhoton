@@ -86,7 +86,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                     while i < mmap.len(){
                         match memchr::memchr(b'\n', &mmap[i..]) {
                             Some(0) => {
-                                flush(&mut writer);
+                                fail(&mut writer, b"");
                                 break;
                             },
                             Some(pos) => {
@@ -99,7 +99,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                                 i = begin;
                             }
                             None => {
-                                flush(&mut writer);
+                                fail(&mut writer, b"");
                                 break;
                             }
                         }
@@ -138,7 +138,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                                 while pos < end {
                                     match memchr::memchr(b'\n', &mmap[pos..end]) {
                                         Some(0) => {
-                                            flush(&mut writer);
+                                            fail(&mut writer, b"");
                                             break;
                                         }
                                         Some(size) => {
