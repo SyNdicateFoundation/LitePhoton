@@ -1,6 +1,7 @@
 [package]
 name = "LitePhoton"
 edition = "2024"
+publish = false
 
 [dependencies]
 clap = { version = "4.5.46", features = ["derive"] }
@@ -16,7 +17,9 @@ memmap2 = "0.9.8"
 memchr = "2.7.5"
 
 [profile.release]
+strip = true
+lto = "fat"
+opt-level = "z"
 codegen-units = 1
-lto = true
-opt-level = 3
-#debug = true ## uncomment this only when flamegraph needed / or profiling
+panic = "abort"
+debug = 0 ## true this only when flamegraph needed / or profiling
