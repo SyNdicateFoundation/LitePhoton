@@ -23,14 +23,14 @@ pub struct Arguments {
 }
 
 impl Arguments {
-    pub fn to_lowercase(mut self) -> Self {
+    pub fn lowercase(mut self) -> Self {
         self.method = self.method.to_lowercase();
         self
     }
 }
 
 pub fn parse_arguments() {
-    ARGUMENTS.set(Arguments::parse().to_lowercase()).unwrap();
+    ARGUMENTS.set(Arguments::parse().lowercase()).unwrap();
 }
 
 pub static ARGUMENTS: OnceLock<Arguments> = OnceLock::new();
