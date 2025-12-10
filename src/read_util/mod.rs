@@ -4,7 +4,7 @@ use crate::input::Input;
 use crate::read_util::common::{fail, map_file, write_all};
 use log::error;
 use std::cmp;
-use std::io::{BufReader, BufWriter, Read, stdin, stdout};
+use std::io::{BufReader, BufWriter, ErrorKind, Read, stdin, stdout};
 use std::sync::Arc;
 use strum_macros::EnumString;
 
@@ -73,7 +73,11 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
         }
         // Use MemMap2 with with the file
         Input::File(_) => {
-            if input.open_file().is_err() {
+            if let Err(err) = input.metadata()
+                && (err.kind() == ErrorKind::NotFound
+                    || err.kind() == ErrorKind::PermissionDenied
+                    || err.kind() == ErrorKind::IsADirectory)
+            {
                 error!(
                     "Failed to open the file. please, either check file permissions, or either specify a file with -f."
                 );
