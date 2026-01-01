@@ -23,7 +23,9 @@ impl Environment {
         }
     }
     pub fn setup(args: &Arguments) {
-        ENVIRONMENT.set(Self::get(args)).unwrap();
+        ENVIRONMENT
+            .set(Self::get(args))
+            .expect("environment.rs: cannot set ENVIRONMENT. already initialized?");
     }
 }
 

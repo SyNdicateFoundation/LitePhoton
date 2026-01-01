@@ -30,7 +30,9 @@ impl Arguments {
 }
 
 pub fn parse_arguments() {
-    ARGUMENTS.set(Arguments::parse().lowercase()).unwrap();
+    ARGUMENTS
+        .set(Arguments::parse().lowercase())
+        .expect("argument_parser.rs: Cannot set ARGUMENTS. already initialized?");
 }
 
 pub static ARGUMENTS: OnceLock<Arguments> = OnceLock::new();

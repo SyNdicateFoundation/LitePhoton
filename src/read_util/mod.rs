@@ -44,7 +44,8 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             if line_buff[i] == b'\n' {
                                 let line = &line_buff[begin..=i];
 
-                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some()
+                                if keyword.is_empty()
+                                    || memchr::memmem::find(line, keyword).is_some()
                                 {
                                     write_all(&mut writer, line);
                                 }
@@ -88,7 +89,8 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
 
             match mode {
                 Mode::Normal => {
-                    let mmap = map_file(input).unwrap();
+                    let mmap =
+                        map_file(input).expect("read_util/mod.rs: Cannot map file to memory");
                     let mut begin = 0usize;
                     let mut i = 0usize;
 
@@ -101,7 +103,8 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             Some(pos) => {
                                 let end = i + pos;
                                 let line = &mmap[begin..=end];
-                                if keyword.is_empty() || twoway::find_bytes(line, keyword).is_some()
+                                if keyword.is_empty()
+                                    || memchr::memmem::find(line, keyword).is_some()
                                 {
                                     write_all(&mut writer, line);
                                 }
@@ -123,8 +126,12 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                             panic!("Could not use chunk mode while input is STDIN.");
                         }
                     };
-                    let file_size = input.metadata().unwrap().len();
-                    let mmap = map_file(input).unwrap();
+                    let file_size = input
+                        .metadata()
+                        .expect("read_util/mod.rs: Cannot get file metadata")
+                        .len();
+                    let mmap =
+                        map_file(input).expect("read_util/mod.rs: Cannot map file to memory");
                     let mmap = Arc::new(mmap);
                     let num_workers = num_cpus::get().max(1) as u64;
                     let chunk_size = if file_size == 0 {
@@ -164,7 +171,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
                                             let line = &mmap[pos..end];
 
                                             if keyword.is_empty()
-                                                || twoway::find_bytes(line, &keyword).is_some()
+                                                || memchr::memmem::find(line, &keyword).is_some()
                                             {
                                                 write_all(&mut writer, line);
                                             }
@@ -176,7 +183,7 @@ pub fn read_input(mode: Mode, input: Input, _stable: bool, keyword: &str) {
 
                                             if !slice.is_empty()
                                                 && (keyword.is_empty()
-                                                    || twoway::find_bytes(slice, &keyword)
+                                                    || memchr::memmem::find(slice, &keyword)
                                                         .is_some())
                                             {
                                                 fail(&mut writer, slice);

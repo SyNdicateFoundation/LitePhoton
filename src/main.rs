@@ -16,9 +16,9 @@ mod read_util;
 fn main() {
     argument_parser::parse_arguments();
 
-    Environment::setup(ARGUMENTS.get().unwrap());
+    Environment::setup(ARGUMENTS.get().expect("main.rs: Cannot get environment"));
 
-    let env = ENVIRONMENT.get().unwrap();
+    let env = ENVIRONMENT.get().expect("main.rs: Cannot get environment");
 
     logger::setup_logger(env.debug);
 
@@ -29,7 +29,7 @@ fn main() {
 
     for file in &env.file {
         read_util::read_input(
-            Mode::from_str(&env.method).unwrap(),
+            Mode::from_str(&env.method).expect("main.rs: Provided mode not found"),
             if !atty::is(atty::Stream::Stdin) && !env.bypass_stdin_check {
                 Input::Stdin(())
             } else {
