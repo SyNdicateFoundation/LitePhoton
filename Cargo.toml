@@ -6,6 +6,7 @@ description = "A blazingly fast text file/csv file/etc scanner."
 homepage = "https://SyNdicateFoundation.ir"
 repository = "https://github.com/SyNdicateFoundation/LitePhoton"
 readme = "README.md"
+license = "LICENSE"
 publish = true
 
 [lints.clippy]
