@@ -1,6 +1,10 @@
 [package]
 name = "LitePhoton"
 edition = "2024"
+description = "A blazingly fast text file/csv file/etc scanner."
+homepage = "https://SyNdicateFoundation.ir"
+repository = "https://github.com/SyNdicateFoundation/LitePhoton"
+readme = "README.md"
 publish = false
 
 [lints.clippy]
